@@ -1,0 +1,2 @@
+rootProject.name='FlamvouriteMap'
+include ':app'
