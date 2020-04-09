@@ -41,7 +41,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mainViewModel: MainViewModel
 
     private var user: FirebaseUser? = null
-    private lateinit var username:String;
+    private lateinit var username:String
+    private lateinit var passWord:String
     private lateinit var sharedPref:SharedPreferences
     private lateinit var editor:SharedPreferences.Editor
     private val REQUEST_CODE = 707
@@ -63,6 +64,7 @@ class MainActivity : AppCompatActivity() {
         editor = sharedPref.edit()
 
         username= sharedPref.getString("Username","").toString()
+        passWord= sharedPref.getString("Password","").toString()
 
         mainViewModel = ViewModelProvider(this).get<MainViewModel>(MainViewModel::class.java)
 
@@ -74,6 +76,9 @@ class MainActivity : AppCompatActivity() {
                 Manifest.permission.ACCESS_FINE_LOCATION)
             != PackageManager.PERMISSION_GRANTED) {
             requestPermissions()
+        }
+        if (username!="" && passWord!=""){
+            autoLogin()
         }
 
     }
@@ -98,6 +103,15 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+    private fun autoLogin(){
+        mainViewModel.loginUser(username,passWord)
+        mainViewModel.setEmail(username)
+        user = mainViewModel.getCurrentUser()
+
+        updateUI(user,username,passWord)
+    }
+
+
 
     @OnClick(R.id.login_button)
     public fun loginClick(view: View)
@@ -108,8 +122,9 @@ class MainActivity : AppCompatActivity() {
         mainViewModel.setEmail(email)
         user = mainViewModel.getCurrentUser()
 
-        updateUI(user,email)
+        updateUI(user,email,passWord)
     }
+
 
     @OnClick(R.id.new_user_button)
     fun registerClick() {
@@ -117,10 +132,11 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun updateUI(user: FirebaseUser?,email:String) {
+    private fun updateUI(user: FirebaseUser?,email:String,password:String) {
         if (user != null) {
 
             editor.putString("Username", email)
+            editor.putString("Password", password)
             editor.commit()
 
             DebugLogger.logDebug("User:" + email)

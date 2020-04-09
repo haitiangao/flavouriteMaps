@@ -1,5 +1,5 @@
 
-package com.example.flamvouritemap.model;
+package com.example.flamvouritemap.placeModel;
 
 import java.util.List;
 import com.google.gson.annotations.Expose;
@@ -10,12 +10,9 @@ public class Library {
     @SerializedName("html_attributions")
     @Expose
     private List<Object> htmlAttributions = null;
-    @SerializedName("next_page_token")
+    @SerializedName("result")
     @Expose
-    private String nextPageToken;
-    @SerializedName("results")
-    @Expose
-    private List<Result> results = null;
+    private Result result;
     @SerializedName("status")
     @Expose
     private String status;
@@ -28,20 +25,12 @@ public class Library {
         this.htmlAttributions = htmlAttributions;
     }
 
-    public String getNextPageToken() {
-        return nextPageToken;
+    public Result getResult() {
+        return result;
     }
 
-    public void setNextPageToken(String nextPageToken) {
-        this.nextPageToken = nextPageToken;
-    }
-
-    public List<Result> getResults() {
-        return results;
-    }
-
-    public void setResults(List<Result> results) {
-        this.results = results;
+    public void setResult(Result result) {
+        this.result = result;
     }
 
     public String getStatus() {

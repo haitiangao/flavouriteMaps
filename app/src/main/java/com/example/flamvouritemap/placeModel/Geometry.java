@@ -1,5 +1,5 @@
 
-package com.example.flamvouritemap.model;
+package com.example.flamvouritemap.placeModel;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;

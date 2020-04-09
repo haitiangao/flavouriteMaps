@@ -5,8 +5,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import com.example.flamvouritemap.database.FavouriteRepository
 import com.example.flamvouritemap.firebase.FirebaseEvents
+import com.example.flamvouritemap.model.FavouriteResult
 import com.example.flamvouritemap.model.Library
-import com.example.flamvouritemap.model.Result
 import com.example.flamvouritemap.network.MapRetrofitService
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -17,31 +17,34 @@ class MapViewModel(application: Application): AndroidViewModel(application) {
     private var firebaseEvent: FirebaseEvents = FirebaseEvents()
     private var favouriteRepository: FavouriteRepository =FavouriteRepository(application)
 
-    init  {
 
-
-    }
-
-    fun getMapsRx(location: String, type: String, keyword: String): Observable<Library> {
+    fun getMapsRx(location: String, type: String): Observable<Library> {
         return mapRetrofitService
-            .getMapsRx(location,type,keyword)
+            .getMapsRx(location,type)
             .observeOn(AndroidSchedulers.mainThread())
             .subscribeOn(Schedulers.io())
     }
 
-    fun getSpecificPlaceRx(placeid: String): Observable<Result>{
+    fun getSpecificPlaceRx(placeid: String): Observable<com.example.flamvouritemap.placeModel.Library>{
         return mapRetrofitService
             .getSpecificPlaceRx(placeid)
             .observeOn(AndroidSchedulers.mainThread())
             .subscribeOn(Schedulers.io())
     }
 
-    fun sendNewFavourite(result: Result) {
-
+    fun getAllFavourites():MutableList<FavouriteResult>{
+        return favouriteRepository.allFavourites
     }
 
-    fun removeFavourite(result: Result) {
+    fun sendNewFavourite(favouriteResult: FavouriteResult) {
+        favouriteRepository.insertAFavourite(favouriteResult)
+    }
 
+    fun removeFavourite(favouriteResult: FavouriteResult) {
+        favouriteRepository.deleteAFavourite(favouriteResult)
+    }
+    fun disposeDisposables(){
+        favouriteRepository.disposeDisposables()
     }
 
 

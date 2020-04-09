@@ -15,7 +15,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import butterknife.BindView
 import com.example.flamvouritemap.R
-import com.example.flamvouritemap.util.Constants.Companion.API_KEY
+import com.example.flamvouritemap.model.FavouriteResult
+import com.example.flamvouritemap.model.Library
 import com.example.flamvouritemap.util.DebugLogger
 import com.example.flamvouritemap.viewmodel.MapViewModel
 import com.google.android.gms.maps.*
@@ -24,6 +25,8 @@ import com.google.android.gms.maps.model.GroundOverlayOptions
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import io.reactivex.disposables.CompositeDisposable
+import java.util.ArrayList
+import com.example.flamvouritemap.model.Result
 
 
 class MapActivity : AppCompatActivity(), OnMapReadyCallback, LocationListener {
@@ -31,20 +34,18 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, LocationListener {
     private lateinit var locationManager: LocationManager
     //private val TAG: String = MapsFragment::class.java.getSimpleName()
     private val REQUEST_LOCATION_PERMISSION = 1
-    private val INITIAL_ZOOM = 12f
+    private val INITIAL_ZOOM = 8f
+    private var username:String? = null
+    private var compositeDisposable:CompositeDisposable = CompositeDisposable()
+    private var poiList: MutableList<Result> = ArrayList<Result>()
 
     private lateinit var mMap: GoogleMap
+    private lateinit var  favouriteFragment:FavouriteFragment
+    private lateinit var mapViewModel: MapViewModel
+    private lateinit var latLng: LatLng
 
     @BindView(R.id.favouriteFrame)
     lateinit var favouriteFrame: FrameLayout
-
-    private var compositeDisposable:CompositeDisposable = CompositeDisposable()
-
-    private lateinit var  favouriteFragment:FavouriteFragment
-    private var username:String? = null
-    private lateinit var mapViewModel: MapViewModel
-
-    private lateinit var latLng: LatLng
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,8 +55,8 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, LocationListener {
         DebugLogger.logDebug(username.toString())
         mapViewModel  = ViewModelProvider(this).get<MapViewModel>(MapViewModel::class.java)
 
+        setUpLocation()
         favouriteFragment= FavouriteFragment(username)
-
         supportFragmentManager
             .beginTransaction()
             .replace(R.id.favouriteFrame,favouriteFragment)
@@ -68,16 +69,40 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, LocationListener {
     }
 
 
-    private fun setUpPoi(){
-        var stringLatLng = latLng.latitude.toString()+","+latLng.longitude.toString()
-        compositeDisposable.add(mapViewModel.getMapsRx(stringLatLng,"restaurant","cruise").subscribe { results->
+    private fun gettingPoi(){
 
-            val resultList = results.results
+        val stringLatLng = ""+latLng.latitude+","+latLng.longitude
+        DebugLogger.logDebug("showing string lat lng: $stringLatLng")
 
-
-
-        })
+        compositeDisposable.add(mapViewModel.getMapsRx(stringLatLng,"restaurant")
+            .subscribe({ results->
+                DebugLogger.logDebug("Getting rx")
+                setupPoi(results)
+        },{throwable ->
+                DebugLogger.logError(throwable)
+            }))
     }
+
+    private fun setupPoi(results: Library) {
+        poiList = results.results
+        DebugLogger.logDebug("Getting results")
+        DebugLogger.logDebug("Getting element:" +poiList[0].name)
+
+        for (element in poiList){
+            DebugLogger.logDebug("Getting element:" +element.name)
+            addLocationMarker(element.name, element.geometry.location.lat,
+                element.geometry.location.lng)
+        }
+
+    }
+
+    private fun addLocationMarker( name:String, latitude:Double, longitude:Double) {
+        val poiLatLng = LatLng(latitude,longitude)
+        mMap.addMarker(MarkerOptions()
+            .position(poiLatLng)
+            .title(name))
+    }
+
 
     @SuppressLint("MissingPermission")
     private fun setUpLocation() {
@@ -94,7 +119,6 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, LocationListener {
     @SuppressLint("MissingPermission")
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
-        setUpLocation()
 
         val lastKnownLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
         latLng = LatLng(lastKnownLocation.latitude,lastKnownLocation.longitude)
@@ -107,19 +131,30 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, LocationListener {
                 INITIAL_ZOOM
             )
         )
-        // Add a ground overlay 100 meters in width to the home location.
         val homeOverlay = GroundOverlayOptions()
             .image(BitmapDescriptorFactory.fromResource(R.drawable.android))
             .position(latLng, 100f)
         mMap.addGroundOverlay(homeOverlay)
 
         setPoiClick(mMap) // Set a click listener for points of interest.
-        //setMapStyle(mMap) // Set the custom map style.
         enableMyLocation(mMap) // Enable location tracking.
+        gettingPoi()
+        setOnMarkerClick(mMap)
+    }
 
-
-
-
+    private fun setOnMarkerClick(map:GoogleMap){
+        map.setOnMarkerClickListener { marker ->
+            for(element in poiList)
+            {
+                if(element.geometry.location.lat==marker.position.latitude
+                    &&element.geometry.location.lng==marker.position.longitude) {
+                    val favouriteResult = FavouriteResult(element.placeId)
+                    mapViewModel.sendNewFavourite(favouriteResult)
+                    favouriteFragment.addToView(element.placeId)
+                }
+            }
+            false
+        }
     }
 
 
@@ -132,6 +167,7 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, LocationListener {
             )
             poiMarker.showInfoWindow()
             poiMarker.tag = getString(R.string.poi)
+
         }
     }
 
@@ -163,6 +199,13 @@ class MapActivity : AppCompatActivity(), OnMapReadyCallback, LocationListener {
     override fun onStop() {
         super.onStop()
         locationManager.removeUpdates(this)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        compositeDisposable.dispose()
+        mapViewModel.disposeDisposables()
+
     }
 
     override fun onLocationChanged(location: Location?) {

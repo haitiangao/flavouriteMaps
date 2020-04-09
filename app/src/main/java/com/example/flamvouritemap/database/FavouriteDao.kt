@@ -8,8 +8,9 @@ import com.example.flamvouritemap.model.FavouriteResult
 
 @Dao
 interface FavouriteDao {
+
     @get:Query("SELECT * FROM Favourite_Result")
-    val favouritePlaces: List<FavouriteResult>
+    val favouritePlaces: MutableList<FavouriteResult>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     fun insertAFavourite(favouriteResult: FavouriteResult)

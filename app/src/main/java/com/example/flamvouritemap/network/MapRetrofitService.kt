@@ -11,7 +11,6 @@ import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.Query
 
 class MapRetrofitService {
     private val mapService: MapService
@@ -31,11 +30,11 @@ class MapRetrofitService {
         return retrofitInstance.create(MapService::class.java)
     }
 
-    fun getMapsRx(location: String, type: String, keyword: String): Observable<Library> {
-        return mapService.getMapRx(location, RADIUS, type, keyword, API_KEY)
+    fun getMapsRx(location: String, type: String): Observable<Library> {
+        return mapService.getMapRx(location, RADIUS, type, API_KEY)
     }
 
-    fun getSpecificPlaceRx(placeid: String): Observable<Result>{
+    fun getSpecificPlaceRx(placeid: String): Observable<com.example.flamvouritemap.placeModel.Library>{
         return mapService.getSpecificPlaceRx(placeid, API_KEY)
     }
 

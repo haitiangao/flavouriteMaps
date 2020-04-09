@@ -14,8 +14,8 @@ import io.reactivex.schedulers.Schedulers
 class FavouriteRepository(application: Application?) {
     private val compositeDisposable = CompositeDisposable()
     private val favouriteDao: FavouriteDao
-    private val favouritePlaces: List<FavouriteResult>
-    val allFavourites: List<FavouriteResult>
+    private var favouritePlaces: MutableList<FavouriteResult>
+    val allFavourites: MutableList<FavouriteResult>
         get() = favouritePlaces
 
     fun disposeDisposables() {
@@ -34,6 +34,8 @@ class FavouriteRepository(application: Application?) {
                     logDebug(
                         "Insert Successful"
                     )
+                    favouritePlaces = favouriteDao.favouritePlaces
+
                 }
             ) { throwable: Throwable? ->
                 logError(
@@ -55,6 +57,7 @@ class FavouriteRepository(application: Application?) {
                     logDebug(
                         "Delete Successful"
                     )
+                    favouritePlaces = favouriteDao.favouritePlaces
                 }
             ) { throwable: Throwable? ->
                 logError(
@@ -62,14 +65,13 @@ class FavouriteRepository(application: Application?) {
                 )
             }
         compositeDisposable.add(disposable)
-        //DebugLogger.logDebug("repo fav: "+bookDao.getFavouriteBooks().size());
-//compositeDisposable.dispose();
+
     }
 
 
     init {
         val db = getDatabase(application!!)
         favouriteDao = db!!.bookDao()
-        favouritePlaces = favouriteDao!!.favouritePlaces
+        favouritePlaces = favouriteDao.favouritePlaces
     }
 }
